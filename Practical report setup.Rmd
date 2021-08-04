@@ -1,0 +1,220 @@
+---
+title: "BIO2090 Practical Assignment notebook"
+author: "Nicholas Harmer"
+date: "2 August 2021"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This is a script to generate unique data sets for the practical report assignment. It should provide each student with unique data, and provide markers with an answer sheet.
+
+Three packages are required. ggplot2 (https://ggplot2.tidyverse.org/authors.html) is required to prepare images for the marker. officer (https://davidgohel.github.io/officer/index.html) provides the ability to write and amend files in Word format. magrittr (https://magrittr.tidyverse.org/) makes the use of officer more straightforward.
+
+```{r}
+# Load packages
+library(ggplot2)
+library(officer)
+library(magrittr)
+```
+
+The working directory and list of students are set up (using dummy numbers in this example):
+
+```{r}
+setwd("C:/Users/njh209/OneDrive - University of Exeter/Nic's documents/R/resources")
+
+# Load student numbers
+Students = c(123456, 234567)
+```
+
+The proteins to be used are set up. To replicate the results obtained in the laboratory, comparatively high molecular weights were required for the "large" proteins. Although we told students that the proteins that they would be given might come from a set of ten, only eight were used in the model. This is because the protein gels that we had available would not fit with the use of the remaining two. These remain good distractors for gauging student understanding. The "protset" matrix sets up the eight sets of three proteins that will be used. 
+```{r}
+# Set up the protein datasets
+names <- c("BSA", "catalase", "myoglobin", "cytochrome c (horse)",  "ribonuclease A",
+           "a-lactalbumin", "GrpE", "cytochrome c (C. jejuni)")
+MW = c(66000, 60000, 17, 12, 13, 14, 20, 11)
+A410 <- c(0,1,3,3,0,0,0,3)
+protset <- matrix(data = c(1,3,6,2,3,6,1,4,6,1,4,7,1,3,8,1,5,8,2,3,8,2,5,7), nrow = 3, ncol = 8)
+# Set up table variables
+headers <- c("Fractions", "A280", "A410")
+```
+
+Set up a loop to run the script for all students. For a test, change the student numbers to a list of one or use the second (commented out) line. The loop is not set up in its entirety here to allow comment on the remainder of the loop. To run, move the end of the loop to the end of the script.
+```{r}
+for (j in 1:length(Students)) {
+}
+```
+
+Firstly, for each student, randomised values are generated for the experiment. Firstly, the proteins that will be used are generated. The data for these are extracted from the protein dataset for convenience and put into a data frame for this experiment.
+```{r}
+  # Generate randomised values for student
+  set <- sample(1:8,1)
+  sets <- protset[,set]
+  prots <- data.frame(names = c(names[sets[1]],names[sets[2]],names[sets[3]]),
+                      MW = c(MW[sets[1]],MW[sets[2]],MW[sets[3]]),
+                      A410 = c(A410[sets[1]],A410[sets[2]],A410[sets[3]]))
+```
+
+Based on the protein set that was selected, a document containing a suitable SDS-PAGE gel is selected. This document will later be loaded and amended to include the column data. Some of the alternative proteins have very similar molecular weights and column behaviours and so in some cases, gels can be used for two protein sets (these are distinguished by the student on grounds of absorbance at 410 nm).
+```{r}
+  if(set == 1 || set == 5) {
+    doc <- paste0("Dataset15-",sample(1:6,1));
+  } else if(set == 2) {
+    doc <- paste0("Dataset2-",sample(1:5,1));
+  } else if(set == 3 || set == 6) {
+    doc <- paste0("Dataset36-",sample(1:4,1));
+  } else if(set == 4) {
+    doc <- "Dataset4";
+  } else if(set == 7) {
+    doc <- paste0("Dataset7-",sample(1:4,1));
+  } else if(set == 8) {
+    doc <- paste0("Dataset8-",sample(1:4,1));
+  }
+```
+
+Next, the size exclusion column is set up. The length and column quality (number of theoretical plates) are randomly assigned; the column size and void volume are automatically generated from these. The values for m and c will be used to define how the size exclusion column behaves and allow users to alter the column as desired.
+```{r}
+  collen <- sample(450:550,1)
+  colrad <- 5
+  colvol <- pi*(collen/10)*((colrad/10)^2)
+  colvoid <- colvol/3
+  theoplat <- sample (400:600,1)
+  m <- -1/log10(150000)
+  c <- 1
+```
+
+The ion exchange column setup is relatively simple. A central location for each peak is randomly assigned within an appropriate range; and the peak height at 280 nm is randomly assigned within a range. Both ranges were selected based on past data. Here the selection is uniform across the range, but a Gaussian distribution could be coded. The absorbance at 410 nm is set as a multiple of the absorbance at 280 nm, as appropriate to the protein.
+```{r}
+  IEX <- c(sample(13:17,1),2.5,(sample(30:40,1)/100),0,sample(43:51,1),2.5,(sample(30:40,1)/100),0)
+  IEX[4] <- IEX[3]*prots$A410[2]; IEX[8] <- IEX[7]*prots$A410[3]
+```
+
+Finally, background readings for the absorbance at 280 nm and 410 nm (from the buffer and plate) are assigned within ranges observed by previous students.
+```{r}
+  back280 <- sample(400:450,1)/10000
+  back410 <- sample(350:400,1)/10000
+```
+
+The size exclusion column is then simulated. Firstly, the elution peak volumes and widths are calculated for each protein from the column and protein data. Two data frames are set up for the outcome data: the first is for reporting to the student in Word, whilst the second will generate the expected image for the marker.
+```{r}
+  # Run SEC column
+  prots$Kav <- c + (m*log10(prots$MW))
+  prots$Ve <- colvoid + (prots$Kav*(colvol-colvoid))
+  prots$W <- (5.54*(prots$Ve^2)*1000/(collen*theoplat))^0.5
+  SEC <- data.frame(Fractions = c(0:35),
+                    A280 = c(0),
+                    A410 = c(0))
+  SEC2 <- data.frame(Fractions = c(0:35,0:35),
+                     Abs = c(0),
+                     Wavelength = c(0))
+```
+
+A loop is run to calculate the absorbance at 280 nm and 410 nm at each of the 36 volume points. For each point the expected absorbance due to each protein at each wavelength is calculated; an error of up to 10% higher or lower is added to this; and the background and a small random error are added. This provides students with data that are readily interpretable but not quite perfect. This replicates data from the top quartile of past students. The data are written to the two data frames.
+```{r}
+  for (i in 1:36) {
+    SEC$A280[i] <- round((back280 + (sample(20:100,1)/10000) +(((0.3*exp(-(((i+colvoid-2)-prots$Ve[1])^2)/
+              (0.5*(prots$W[1]^2)))) + (0.3*exp(-(((i+colvoid-2)-prots$Ve[2])^2)/(0.5*(prots$W[2]^2))))+
+                (0.3*exp(-(((i+colvoid-2)-prots$Ve[3])^2)/(0.5*(prots$W[3]^2)))))*sample(90:110,1)/100)),3)
+    SEC$A410[i] <- round((back410 + (sample(20:100,1)/10000) +
+                    (((0.3*prots$A410[1]*exp(-(((i+colvoid-2)-prots$Ve[1])^2)/(0.5*(prots$W[1]^2)))) + 
+                    (0.3*prots$A410[2]*exp(-(((i+colvoid-2)-prots$Ve[2])^2)/(0.5*(prots$W[2]^2)))) + 
+                    (0.3*prots$A410[3]*exp(-(((i+colvoid-2)-prots$Ve[3])^2)/(0.5*(prots$W[3]^2)))))*
+                      sample(90:110,1)/100)),3)
+    SEC2$Abs[i] <- SEC$A280[i]; SEC2$Abs[i+36] <- SEC$A410[i]
+    SEC2$Wavelength[i] <- "280 nm"; SEC2$Wavelength[i+36] <- "410 nm"
+  }
+```
+
+The same process is repeated for the ion exchange column:
+
+```{r}
+  #Run IEX column
+  IEC <- data.frame(Fractions = c(0:60),
+                    A280 = c(0),
+                    A410 = c(0))
+  IEC2 <- data.frame(Fractions = c(0:60,0:60),
+                     Abs = c(0),
+                     Wavelength = c(0))
+  
+  for (i in 1:61) {
+    IEC$A280[i] <- round((back280 + (sample(20:100,1)/10000) + (((IEX[3]*exp(-(((i-1)-IEX[1])^2)/
+              (0.5*(IEX[2]^2)))) + (IEX[7]*exp(-(((i-1)-IEX[5])^2)/(0.5*(IEX[6]^2)))))*sample(90:110,1)/
+                100)),3)
+    IEC$A410[i] <- round((back410 + (sample(20:100,1)/10000) + (((IEX[4]*exp(-(((i-1)-IEX[1])^2)/
+              (0.5*(IEX[2]^2)))) + (IEX[8]*exp(-(((i-1)-
+              IEX[5])^2)/(0.5*(IEX[6]^2)))))*sample(90:110,1)/100)),3)
+    IEC2$Abs[i] <- IEC$A280[i]; IEC2$Abs[i+61] <- IEC$A410[i]
+    IEC2$Wavelength[i] <- "280 nm"; IEC2$Wavelength[i+61] <- "410 nm"
+  }
+```
+
+The student output file is generated. Firstly, the document selected earlier is loaded. The following line invokes the magrittr utility to make adding further text convenient. The cursor is moved to the top of the file. The data are then written to the file. These are the student's number; the size exclusion void volume and data (as a table); and the ion exchange data (as a table).
+The file is then written out into a "Students" folder with the student number as the filename.
+```{r}
+  # Generate student files
+  readout <- read_docx(paste0("Start_files/",doc, ".docx"))
+  readout <- readout %>%
+    cursor_begin %>%
+    body_add_par(paste0("Data for student: ", Students[j])) %>%
+    body_add_par("") %>%
+    body_add_par("Data for size exclusion chromatography:", style = "Normal") %>%
+    body_add_par("") %>% 
+    body_add_par(paste0("Column void volume: ", round(colvoid), " mL"), style = "Normal") %>%
+    body_add_par("") %>% 
+    body_add_table(value = SEC, style="Normal Table") %>%
+    body_add_par("") %>%
+    body_add_par("") %>%
+    body_add_par("Data for ion exchange chromatography:") %>%
+    body_add_par("") %>%
+    body_add_table(value = IEC, style="Normal Table") %>%
+    body_add_par("") %>%
+    body_add_par("") %>%
+
+    print(readout, target = paste0("Student_files/", Students[j], ".docx"))
+
+```
+
+For the marker file, figures for the two columns are needed. The ggplot package produces beautiful figures and is very well supported with documentation. This is used to generate two plots that will be added to the marker file. These use the second data frame for each column, which was set up to suit the format that ggplot likes.
+```{r}
+  # Prepare figures
+  se <- ggplot(data = SEC2, aes(x = Fractions, y=Abs)) 
+  se <- se + geom_path() + geom_point(mapping = aes(size = 2, color = Wavelength)) +
+          labs(y="Absorbance / AU", x="Fraction") 
+  
+  ie <- ggplot(data = IEC2, aes(x = Fractions, y=Abs)) 
+  ie <- ie + geom_path() + geom_point(mapping = aes(size = 2, color = Wavelength)) + 
+          labs(y="Absorbance / AU", x="Fraction")
+```
+
+Finally, the marker files are prepared. In this case a new document is generated. This gives the student number; the correct answer for the protein set; and the graphs for the two columns. This provides the marker with all the information needed to know what outcome the student should get in a convenient format. These are written to a "Lecturer" folder with the student number again as the filename.
+
+```{r}
+  # Generate marker files
+  
+  readout <- read_docx()
+  readout <- readout %>%
+    body_add_par("BIO2090 Laboratory report assignment", style = 'heading 1') %>%
+    body_add_par("") %>%
+    body_add_par(paste0("Results for student: ", Students[j])) %>%
+    body_add_par("") %>%
+    body_add_par(paste0("Correct proteins: ", names[sets[1]], ", ", names[sets[2]], 
+                        ", ", names[sets[3]]), style = "Normal") %>%
+    body_add_par("") %>%
+    body_add_par("Graph for size exclusion chromatography") %>%
+    body_add_par("") %>%
+    body_add_gg(value = se, style = "centered") %>%
+    body_add_par("") %>%
+    body_add_break() %>%
+    body_add_par("Graph for ion exchange chromatography:") %>%
+    body_add_par("") %>%
+    body_add_gg(value = ie, style="centered") %>%
+      
+    print(readout, target = paste0("Lecturer_files/", Students[j], "_answers.docx"))
+```
+
+Finally, the loop is closed so that all of these actions are run for every student.
