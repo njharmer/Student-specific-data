@@ -47,7 +47,7 @@ Two random elements are then generated, for the background reading and the gradi
                          Volume_of_BSA_solution_uL = c(0,4,8,12,16,20),
                          Volume_of_water_uL = c(1000,996,992,988,984,980),
                          Absorbance_595nm = c(0),
-                         concentration = c(0),
+                         concentration_ug_mL = c(0),
                          Corrected_Absorbance_595nm = c(0)) 
   grad <- 0.0025+(sample(0:100,1)/100000)
   back <- 0.9+(sample(0:200,1)/1000)
