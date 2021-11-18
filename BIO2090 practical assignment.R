@@ -8,7 +8,7 @@ library(magrittr)
 setwd("C:/Users/njh209/OneDrive - University of Exeter/Nic's documents/R/resources")
 
 # Load student numbers
-Students = c(123456,234567)
+Students = c("C123456", "C234567")
 
 # Set up the protein datasets
 MW = c(66000, 60000, 17, 12, 13, 14, 20, 11)
@@ -18,12 +18,12 @@ A410 <- c(0,1,3,3,0,0,0,3)
 protset <- matrix(data = c(1,3,6,2,3,6,1,4,6,1,4,7,1,3,8,1,5,8,2,3,8,2,5,7), nrow = 3, ncol = 8)
 
 # Set up table variables
-headers <- c("Fractions", "A280", "A410")
+headers <- c("Fractions", "A280 nm", "A410 nm")
 
 #Actions for each individual dataset
 
 for (j in 1:length(Students)) {
-
+  
   # Generate randomised values for student
   set <- sample(1:8,1)
   sets <- protset[,set]
@@ -43,7 +43,7 @@ for (j in 1:length(Students)) {
   } else if(set == 8) {
     doc <- paste0("Dataset8-",sample(1:4,1));
   }
-
+  
   collen <- sample(450:550,1)
   colrad <- 5
   colvol <- pi*(collen/10)*((colrad/10)^2)
@@ -55,50 +55,50 @@ for (j in 1:length(Students)) {
   IEX[4] <- IEX[3]*prots$A410[2]; IEX[8] <- IEX[7]*prots$A410[3]
   back280 <- sample(400:450,1)/10000
   back410 <- sample(350:400,1)/10000
-
+  
   # Run SEC column
   prots$Kav <- c + (m*log10(prots$MW))
   prots$Ve <- colvoid + (prots$Kav*(colvol-colvoid))
   prots$W <- (5.54*(prots$Ve^2)*1000/(collen*theoplat))^0.5
   SEC <- data.frame(Fractions = c(0:35),
-                    A280 = c(0),
-                    A410 = c(0))
+                    A280nm = c(0),
+                    A410nm = c(0))
   SEC2 <- data.frame(Fractions = c(0:35,0:35),
                      Abs = c(0),
                      Wavelength = c(0))
   
   for (i in 1:36) {
-    SEC$A280[i] <- round((back280 + (sample(20:100,1)/10000) +(((0.3*exp(-(((i+colvoid-2)-prots$Ve[1])^2)/
-              (0.5*(prots$W[1]^2)))) + (0.3*exp(-(((i+colvoid-2)-prots$Ve[2])^2)/(0.5*(prots$W[2]^2))))+
-                (0.3*exp(-(((i+colvoid-2)-prots$Ve[3])^2)/(0.5*(prots$W[3]^2)))))*sample(90:110,1)/100)),3)
-    SEC$A410[i] <- round((back410 + (sample(20:100,1)/10000) +
-                    (((0.3*prots$A410[1]*exp(-(((i+colvoid-2)-prots$Ve[1])^2)/(0.5*(prots$W[1]^2)))) + 
-                    (0.3*prots$A410[2]*exp(-(((i+colvoid-2)-prots$Ve[2])^2)/(0.5*(prots$W[2]^2)))) + 
-                    (0.3*prots$A410[3]*exp(-(((i+colvoid-2)-prots$Ve[3])^2)/(0.5*(prots$W[3]^2)))))*
-                      sample(90:110,1)/100)),3)
-    SEC2$Abs[i] <- SEC$A280[i]; SEC2$Abs[i+36] <- SEC$A410[i]
+    SEC$A280nm[i] <- round((back280 + (sample(20:100,1)/10000) +(((0.3*exp(-(((i+colvoid-2)-prots$Ve[1])^2)/
+                                                                           (0.5*(prots$W[1]^2)))) + (0.3*exp(-(((i+colvoid-2)-prots$Ve[2])^2)/(0.5*(prots$W[2]^2))))+
+                                                                  (0.3*exp(-(((i+colvoid-2)-prots$Ve[3])^2)/(0.5*(prots$W[3]^2)))))*sample(90:110,1)/100)),3)
+    SEC$A410nm[i] <- round((back410 + (sample(20:100,1)/10000) +
+                            (((0.3*prots$A410[1]*exp(-(((i+colvoid-2)-prots$Ve[1])^2)/(0.5*(prots$W[1]^2)))) + 
+                                (0.3*prots$A410[2]*exp(-(((i+colvoid-2)-prots$Ve[2])^2)/(0.5*(prots$W[2]^2)))) + 
+                                (0.3*prots$A410[3]*exp(-(((i+colvoid-2)-prots$Ve[3])^2)/(0.5*(prots$W[3]^2)))))*
+                               sample(90:110,1)/100)),3)
+    SEC2$Abs[i] <- SEC$A280nm[i]; SEC2$Abs[i+36] <- SEC$A410nm[i]
     SEC2$Wavelength[i] <- "280 nm"; SEC2$Wavelength[i+36] <- "410 nm"
   }
   
   #Run IEX column
   IEC <- data.frame(Fractions = c(0:60),
-                    A280 = c(0),
-                    A410 = c(0))
+                    A280nm = c(0),
+                    A410nm = c(0))
   IEC2 <- data.frame(Fractions = c(0:60,0:60),
                      Abs = c(0),
                      Wavelength = c(0))
   
   for (i in 1:61) {
-    IEC$A280[i] <- round((back280 + (sample(20:100,1)/10000) + (((IEX[3]*exp(-(((i-1)-IEX[1])^2)/
-              (0.5*(IEX[2]^2)))) + (IEX[7]*exp(-(((i-1)-IEX[5])^2)/(0.5*(IEX[6]^2)))))*sample(90:110,1)/
-                100)),3)
-    IEC$A410[i] <- round((back410 + (sample(20:100,1)/10000) + (((IEX[4]*exp(-(((i-1)-IEX[1])^2)/
-              (0.5*(IEX[2]^2)))) + (IEX[8]*exp(-(((i-1)-
-              IEX[5])^2)/(0.5*(IEX[6]^2)))))*sample(90:110,1)/100)),3)
-    IEC2$Abs[i] <- IEC$A280[i]; IEC2$Abs[i+61] <- IEC$A410[i]
+    IEC$A280nm[i] <- round((back280 + (sample(20:100,1)/10000) + (((IEX[3]*exp(-(((i-1)-IEX[1])^2)/
+                                                                               (0.5*(IEX[2]^2)))) + (IEX[7]*exp(-(((i-1)-IEX[5])^2)/(0.5*(IEX[6]^2)))))*sample(90:110,1)/
+                                                                  100)),3)
+    IEC$A410nm[i] <- round((back410 + (sample(20:100,1)/10000) + (((IEX[4]*exp(-(((i-1)-IEX[1])^2)/
+                                                                               (0.5*(IEX[2]^2)))) + (IEX[8]*exp(-(((i-1)-
+                                                                                                                     IEX[5])^2)/(0.5*(IEX[6]^2)))))*sample(90:110,1)/100)),3)
+    IEC2$Abs[i] <- IEC$A280nm[i]; IEC2$Abs[i+61] <- IEC$A410nm[i]
     IEC2$Wavelength[i] <- "280 nm"; IEC2$Wavelength[i+61] <- "410 nm"
   }
-
+  
   # Generate student files
   readout <- read_docx(paste0("Start_files/",doc, ".docx"))
   readout <- readout %>%
@@ -117,17 +117,17 @@ for (j in 1:length(Students)) {
     body_add_table(value = IEC, style="Normal Table") %>%
     body_add_par("") %>%
     body_add_par("") %>%
-
+    
     print(readout, target = paste0("Student_files/", Students[j], ".docx"))
   
   # Prepare figures
   se <- ggplot(data = SEC2, aes(x = Fractions, y=Abs)) 
   se <- se + geom_path() + geom_point(mapping = aes(size = 2, color = Wavelength)) +
-          labs(y="Absorbance / AU", x="Fraction") 
+    labs(y="Absorbance / AU", x="Fraction") 
   
   ie <- ggplot(data = IEC2, aes(x = Fractions, y=Abs)) 
   ie <- ie + geom_path() + geom_point(mapping = aes(size = 2, color = Wavelength)) + 
-          labs(y="Absorbance / AU", x="Fraction")
+    labs(y="Absorbance / AU", x="Fraction")
   
   # Generate marker files
   
@@ -148,7 +148,7 @@ for (j in 1:length(Students)) {
     body_add_par("Graph for ion exchange chromatography:") %>%
     body_add_par("") %>%
     body_add_gg(value = ie, style="centered") %>%
-      
+    
     print(readout, target = paste0("Lecturer_files/", Students[j], "_answers.docx"))
   
 }
